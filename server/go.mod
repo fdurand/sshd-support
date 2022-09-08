@@ -1,4 +1,4 @@
-module sshd
+module github.com/fdurand/sshd-support/server
 
 go 1.17
 
