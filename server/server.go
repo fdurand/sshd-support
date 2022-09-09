@@ -91,8 +91,8 @@ func NewServer(c *Config) (*Server, error) {
 		k := string(key.Marshal())
 		if cmt, exists := keys[k]; exists {
 			s.debugf("User '%s' authenticated with public key", cmt)
-			return &ssh.Permissions{Extensions: map[string]string{"user_id": conn.User()}}, fmt.Errorf("Key accepted next steps")
-			// return nil, nil
+			// return &ssh.Permissions{Extensions: map[string]string{"user_id": conn.User()}}, fmt.Errorf("Key accepted next steps")
+			return nil, nil
 		}
 		s.debugf("User authentication failed with public key")
 		return nil, fmt.Errorf("denied")
