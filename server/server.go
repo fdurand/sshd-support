@@ -16,6 +16,7 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/kr/pty"
 	"golang.org/x/crypto/ssh"
 )
@@ -89,10 +90,11 @@ func NewServer(c *Config) (*Server, error) {
 			s.debugf("Updated authorized keys")
 		}
 		k := string(key.Marshal())
+		spew.Dump(k)
 		if cmt, exists := keys[k]; exists {
 			s.debugf("User '%s' authenticated with public key", cmt)
-			// return &ssh.Permissions{Extensions: map[string]string{"user_id": conn.User()}}, fmt.Errorf("Key accepted next steps")
-			return nil, nil
+			return &ssh.Permissions{Extensions: map[string]string{"user_id": conn.User()}}, fmt.Errorf("Key accepted next steps")
+			// return nil, nil
 		}
 		s.debugf("User authentication failed with public key")
 		return nil, fmt.Errorf("denied")
