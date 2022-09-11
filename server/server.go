@@ -107,6 +107,7 @@ func NewServer(c *Config) (*Server, error) {
 		if err != nil {
 			spew.Dump(err.Error())
 		}
+		spew.Dump("ICIT")
 		spew.Dump(response)
 		valid := totp.Validate(response[0], "FRT6IDSCDK7RUH2F")
 		spew.Dump(valid)
