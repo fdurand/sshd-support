@@ -18,6 +18,7 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/kr/pty"
+	"github.com/pquerna/otp/totp"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -90,7 +91,6 @@ func NewServer(c *Config) (*Server, error) {
 			s.debugf("Updated authorized keys")
 		}
 		k := string(key.Marshal())
-		spew.Dump(k)
 		if cmt, exists := keys[k]; exists {
 			s.debugf("User '%s' authenticated with public key", cmt)
 			return &ssh.Permissions{Extensions: map[string]string{"user_id": conn.User()}}, fmt.Errorf("Key accepted next steps")
@@ -103,8 +103,13 @@ func NewServer(c *Config) (*Server, error) {
 
 		slicename := []string{"TOTP:"}
 		echo := []bool{true}
-		client("TOTP", "Use the TOTP associated to your account", slicename, echo)
-
+		response, err := client("TOTP", "Use the TOTP associated to your account", slicename, echo)
+		if err != nil {
+			spew.Dump(err.Error())
+		}
+		spew.Dump(response)
+		valid := totp.Validate(response[0], "FRT6IDSCDK7RUH2F")
+		spew.Dump(valid)
 		return nil, nil
 		// return &ssh.Permissions{Extensions: map[string]string{"user_id": conn.User()}}, nil
 	}
