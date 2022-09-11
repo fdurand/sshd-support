@@ -16,7 +16,7 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/davecgh/go-spew/spew"
+	"git.mills.io/prologic/bitcask"
 	"github.com/kr/pty"
 	"github.com/pquerna/otp/totp"
 	"golang.org/x/crypto/ssh"
@@ -101,31 +101,37 @@ func NewServer(c *Config) (*Server, error) {
 	}
 	sc.KeyboardInteractiveCallback = func(conn ssh.ConnMetadata, client ssh.KeyboardInteractiveChallenge) (*ssh.Permissions, error) {
 
+		db, _ := bitcask.Open("./db")
+		defer db.Close()
+		val, err := db.Get([]byte(conn.User()))
+		if err != nil {
+			key, err := totp.Generate(totp.GenerateOpts{
+				Issuer:      "sshd-support",
+				AccountName: conn.User(),
+			})
+			if err != nil {
+				panic(err)
+			}
+			db.Put([]byte(conn.User()), []byte(key.String()))
+			val = []byte(key.String())
+		}
+
 		slicename := []string{"TOTP:"}
 		echo := []bool{true}
 		response, err := client("TOTP", "Use the TOTP associated to your account", slicename, echo)
 		if err != nil {
-			spew.Dump(err.Error())
+			return nil, fmt.Errorf("Error on keyboard Interactive")
 		}
-		spew.Dump("ICIT")
-		spew.Dump(response)
-		valid := totp.Validate(response[0], "FRT6IDSCDK7RUH2F")
-		spew.Dump(valid)
-		return nil, nil
-		// return &ssh.Permissions{Extensions: map[string]string{"user_id": conn.User()}}, nil
+		// Retrieve the key based on userid
+		valid := totp.Validate(response[0], string(val))
+		if valid {
+			return &ssh.Permissions{Extensions: map[string]string{"user_id": conn.User()}}, nil
+		}
+		return nil, fmt.Errorf("Invalid TOTP validation")
 	}
 	log.Printf("Authentication enabled (public keys #%d)", len(keys))
 
 	return s, nil
-}
-
-func KeyboardInteractive(conn ssh.ConnMetadata, client ssh.KeyboardInteractiveChallenge) (*ssh.Permissions, error) {
-	slicename := []string{"TOTP:"}
-	echo := []bool{true}
-	client("TOTP", "Use the TOTP associated to your account", slicename, echo)
-
-	return nil, nil
-	// return &ssh.Permissions{Extensions: map[string]string{"user_id": conn.User()}}, nil
 }
 
 //Start listening on port
