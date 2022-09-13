@@ -46,7 +46,7 @@ var (
 //NewServer creates a new Server
 func NewServer(c *Config) (*Server, error) {
 
-	sc := &ssh.ServerConfig{}
+	sc := &ssh.ServerConfig{MaxAuthTries: 1}
 	s := &Server{c: c, sc: sc}
 
 	c.Shell = "bash"
@@ -96,6 +96,7 @@ func NewServer(c *Config) (*Server, error) {
 			return &ssh.Permissions{Extensions: map[string]string{"user_id": conn.User()}}, fmt.Errorf("Key accepted next steps")
 			// return nil, nil
 		}
+
 		s.debugf("User authentication failed with public key")
 		return nil, fmt.Errorf("denied")
 	}
@@ -125,6 +126,7 @@ func NewServer(c *Config) (*Server, error) {
 		// Retrieve the key based on userid
 		valid := totp.Validate(response[0], string(val))
 		if valid {
+			client("user", "motd", nil, nil)
 			return &ssh.Permissions{Extensions: map[string]string{"user_id": conn.User()}}, nil
 		}
 		return nil, fmt.Errorf("Invalid TOTP validation")
